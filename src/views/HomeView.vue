@@ -7,7 +7,7 @@ import { usePhotos } from '@/composables/usePhotos.js'
 import { useSmoothScroll } from '@/composables/useSmoothScroll.js'
 
 const { categories, activeCategory, counts, masonryItems, setCategory } = usePhotos()
-useSmoothScroll()
+const { resize: notifyScroll } = useSmoothScroll()
 
 const lightboxRef = ref(null)
 const placeholderMessage = ref('')
@@ -49,6 +49,7 @@ function handleCardClick(index) {
         :key="activeCategory"
         :items="masonryItems"
         @card-click="handleCardClick"
+        @relayout="notifyScroll"
       />
 
       <div v-else class="empty">

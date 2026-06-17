@@ -1,11 +1,100 @@
 <script setup>
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import PhotoCard from './PhotoCard.vue'
 
 const props = defineProps({
-  items: { type: Array, required: true }
+  items: { type: Array, required: true },
+  /** 列数断点（与 CSS 列宽对应） */
+  breakpoints: {
+    type: Object,
+    default: () => ({ 0: 2, 700: 3, 1100: 4, 1500: 5 })
+  },
+  /** 列间距 px */
+  gap: { type: Number, default: 16 }
 })
 
-const emit = defineEmits(['card-click'])
+const emit = defineEmits(['card-click', 'relayout'])
+
+const gridEl = ref(null)
+const positions = ref([]) // [{ left, top, width, height }, ...]
+const containerHeight = ref(0)
+
+let ro = null
+let winRO = null
+
+function getColumnCount(width) {
+  const bp = props.breakpoints
+  const keys = Object.keys(bp)
+    .map(Number)
+    .sort((a, b) => a - b)
+  let count = bp[0] ?? 1
+  for (const k of keys) {
+    if (width >= k) count = bp[k]
+  }
+  return count
+}
+
+function relayout() {
+  const el = gridEl.value
+  if (!el) return
+  const containerWidth = el.clientWidth
+  if (!containerWidth) return
+
+  const columnCount = getColumnCount(containerWidth)
+  const columnWidth = (containerWidth - (columnCount - 1) * props.gap) / columnCount
+
+  const colHeights = new Array(columnCount).fill(0)
+  const result = new Array(props.items.length)
+
+  for (let i = 0; i < props.items.length; i++) {
+    const item = props.items[i]
+    const ratio = (item.height || 4) / (item.width || 5)
+    const cardHeight = columnWidth * ratio
+
+    // 选最矮的列
+    let minIdx = 0
+    for (let c = 1; c < columnCount; c++) {
+      if (colHeights[c] < colHeights[minIdx]) minIdx = c
+    }
+
+    const left = minIdx * (columnWidth + props.gap)
+    const top = colHeights[minIdx]
+
+    result[i] = { left, top, width: columnWidth, height: cardHeight }
+    colHeights[minIdx] = top + cardHeight + props.gap
+  }
+
+  positions.value = result
+  // 容器高度 = 最高列高（去掉最后那个 gap）
+  containerHeight.value = Math.max(0, Math.max(...colHeights) - props.gap)
+  // 通知父组件（如 Lenis）刷新滚动边界
+  emit('relayout')
+}
+
+onMounted(() => {
+  relayout()
+  // 容器尺寸变化（如侧栏收起、字体加载导致重排）
+  if (typeof ResizeObserver !== 'undefined' && gridEl.value) {
+    ro = new ResizeObserver(() => relayout())
+    ro.observe(gridEl.value)
+  }
+  // 窗口缩放
+  if (typeof ResizeObserver !== 'undefined') {
+    winRO = new ResizeObserver(() => relayout())
+    winRO.observe(document.documentElement)
+  }
+})
+
+onBeforeUnmount(() => {
+  ro?.disconnect()
+  winRO?.disconnect()
+})
+
+// items / 列数变化时重排
+watch(
+  () => [props.items.length, props.gap, JSON.stringify(props.breakpoints)],
+  () => nextTick(relayout)
+)
 
 function handleClick(index) {
   emit('card-click', index)
@@ -13,53 +102,28 @@ function handleClick(index) {
 </script>
 
 <template>
-  <div class="masonry-grid">
+  <div ref="gridEl" class="masonry-grid" :style="{ height: containerHeight + 'px' }">
     <PhotoCard
       v-for="(item, idx) in items"
+      v-show="positions[idx]"
       :key="item.id"
       :item="item"
       :index="idx"
+      :style="{
+        position: 'absolute',
+        left: (positions[idx]?.left ?? 0) + 'px',
+        top: (positions[idx]?.top ?? 0) + 'px',
+        width: (positions[idx]?.width ?? 0) + 'px',
+        height: (positions[idx]?.height ?? 0) + 'px'
+      }"
       @click="handleClick(idx)"
     />
   </div>
 </template>
 
 <style scoped>
-/*
- * CSS 多列瀑布流：每列独立垂直流动，按图片原始宽高比自然错落。
- * 列数随主面板宽度自动变化（容器宽度 ≈ 280px 时新增一列）。
- */
 .masonry-grid {
+  position: relative;
   width: 100%;
-  column-count: 2;
-  column-gap: 16px;
-}
-
-@media (min-width: 700px) {
-  .masonry-grid {
-    column-count: 3;
-  }
-}
-
-@media (min-width: 1100px) {
-  .masonry-grid {
-    column-count: 4;
-  }
-}
-
-@media (min-width: 1500px) {
-  .masonry-grid {
-    column-count: 5;
-  }
-}
-
-:deep(.photo-card) {
-  display: inline-block; /* 列布局需要 inline-block 容器 */
-  width: 100%;
-  margin: 0 0 16px;
-  /* 防止卡片在列中间被截断 */
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  page-break-inside: avoid;
 }
 </style>

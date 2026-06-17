@@ -28,7 +28,7 @@ function onError() {
   <div
     class="photo-card"
     :class="{ 'is-loaded': loaded, 'is-failed': failed }"
-    :style="{ '--stagger-delay': delay, aspectRatio: `${item.width} / ${item.height}` }"
+    :style="{ '--stagger-delay': delay }"
   >
     <!-- 骨架屏（直角矩形 + shimmer 渐变动画） -->
     <div v-if="!loaded" class="photo-card__skeleton" aria-hidden="true"></div>
@@ -53,7 +53,6 @@ function onError() {
 <style scoped>
 .photo-card {
   position: relative;
-  width: 100%;
   overflow: hidden;
   background: var(--c-mist);
   cursor: pointer;
@@ -91,9 +90,12 @@ function onError() {
 }
 
 .photo-card__img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
+  object-fit: cover;
   user-select: none;
   -webkit-user-drag: none;
 }

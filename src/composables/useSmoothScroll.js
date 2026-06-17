@@ -5,6 +5,7 @@ import Lenis from 'lenis'
  * Lenis 阻尼滚动 composable
  * - 尊重 prefers-reduced-motion
  * - 自动 raf 循环
+ * - 支持外部调用 resize() 刷新滚动边界（如 MasonryGrid 重排后）
  * - 卸载时清理
  */
 export function useSmoothScroll() {
@@ -13,7 +14,6 @@ export function useSmoothScroll() {
   let rafId = null
 
   function init() {
-    // 尊重无障碍偏好
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduced) {
       enabled.value = false
@@ -21,8 +21,8 @@ export function useSmoothScroll() {
     }
 
     const instance = new Lenis({
-      lerp: 0.1,           // 0~1，越小越平滑
-      wheelMultiplier: 1,  // 滚轮速度
+      lerp: 0.1,
+      wheelMultiplier: 1,
       touchMultiplier: 1.4,
       smoothWheel: true
     })
@@ -35,6 +35,11 @@ export function useSmoothScroll() {
 
     lenis.value = instance
     enabled.value = true
+  }
+
+  /** 通知 Lenis 重新计算滚动边界（供 MasonryGrid 等动态高度组件调用） */
+  function resize() {
+    lenis.value?.resize()
   }
 
   function destroy() {
@@ -52,5 +57,5 @@ export function useSmoothScroll() {
   onMounted(init)
   onBeforeUnmount(destroy)
 
-  return { lenis, enabled }
+  return { lenis, enabled, resize }
 }
