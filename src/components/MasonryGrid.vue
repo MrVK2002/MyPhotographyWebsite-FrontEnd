@@ -10,7 +10,7 @@ const props = defineProps({
     default: () => ({ 0: 2, 700: 3, 1100: 4, 1500: 5 })
   },
   /** 列间距 px */
-  gap: { type: Number, default: 16 }
+  gap: { type: Number, default: 4 }
 })
 
 const emit = defineEmits(['card-click', 'relayout'])

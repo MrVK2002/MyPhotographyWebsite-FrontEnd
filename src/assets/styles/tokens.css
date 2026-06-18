@@ -13,6 +13,8 @@
   --font-display: 'Newsreader', Georgia, 'Songti SC', serif;
   --font-body: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-elegance: 'HFSimpleElegance-2', 'Songti SC', 'Noto Serif SC', Georgia, serif;
+  --font-hans: 'SourceHanSansSC-VF', 'Noto Sans SC', 'PingFang SC', sans-serif;
 
   /* 字号 */
   --fs-xs: 11px;
@@ -45,4 +47,18 @@
   --side-width: 20%;
   --main-width: 80%;
   --gutter: 10px;
+}
+
+/* 本地字体 */
+@font-face {
+  font-family: 'HFSimpleElegance-2';
+  src: url('../font/HFSimpleElegance-2.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SourceHanSansSC-VF';
+  src: url('../font/SourceHanSansSC-VF.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
 }
