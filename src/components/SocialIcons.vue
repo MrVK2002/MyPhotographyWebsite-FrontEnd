@@ -3,20 +3,16 @@ defineProps({
   size: { type: Number, default: 16 }
 })
 
-// 简洁 SVG 图标，零圆角
 const ICONS = [
   { id: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/' },
-  { id: 'xiaohongshu', label: '小红书', href: 'https://www.xiaohongshu.com/' },
   { id: 'x', label: 'X (Twitter)', href: 'https://x.com/' },
   { id: 'douyin', label: '抖音', href: 'https://www.douyin.com/' }
-]
+] 
 
 function pathFor(id) {
   switch (id) {
     case 'instagram':
       return 'M3 7.5A4.5 4.5 0 0 1 7.5 3h9A4.5 4.5 0 0 1 21 7.5v9a4.5 4.5 0 0 1-4.5 4.5h-9A4.5 4.5 0 0 1 3 16.5v-9zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm5-1.25a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z'
-    case 'xiaohongshu':
-      return 'M4 4h16v16H4V4zm2 2v12h12V6H6zm2 2h2v2H8V8zm4 0h4v2h-4V8zM8 11h2v2H8v-2zm4 0h4v2h-4v-2zm-4 3h2v2H8v-2zm4 0h4v2h-4v-2z'
     case 'x':
       return 'M3 3h4.5l4.5 6 5-6H20l-7 8.5L21 21h-4.5l-5-6.5L6 21H3l7.5-9.5L3 3z'
     case 'douyin':

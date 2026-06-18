@@ -1,8 +1,9 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import SideMenu from '@/components/SideMenu.vue'
 import MasonryGrid from '@/components/MasonryGrid.vue'
 import Lightbox from '@/components/Lightbox.vue'
+import AboutSection from '@/components/AboutSection.vue'
 import { usePhotos } from '@/composables/usePhotos.js'
 import { useSmoothScroll } from '@/composables/useSmoothScroll.js'
 
@@ -14,13 +15,13 @@ const placeholderMessage = ref('')
 
 function handleSelectCategory(key) {
   placeholderMessage.value = ''
-  if (key === 'about' || key === 'contact' || key === 'guestbook') {
-    const map = {
-      about: '关于摄影师页面正在筹备中。',
-      contact: '联系 / 约拍入口即将开放。',
-      guestbook: '留言墙模块将在下一版本上线。'
-    }
-    placeholderMessage.value = map[key]
+  if (key === 'contact') {
+    placeholderMessage.value = '联系 / 约拍入口即将开放。'
+    setCategory('all')
+    return
+  }
+  if (key === 'guestbook') {
+    placeholderMessage.value = '留言墙模块将在下一版本上线。'
     setCategory('all')
     return
   }
@@ -44,8 +45,10 @@ function handleCardClick(index) {
     <main class="main-pane" role="main">
       <!-- 顶部：按 brief 严格无任何内容（无标题/搜索/筛选/面包屑） -->
 
+      <AboutSection v-if="activeCategory === 'about'" />
+
       <MasonryGrid
-        v-if="masonryItems.length"
+        v-else-if="masonryItems.length"
         :key="activeCategory"
         :items="masonryItems"
         @card-click="handleCardClick"
