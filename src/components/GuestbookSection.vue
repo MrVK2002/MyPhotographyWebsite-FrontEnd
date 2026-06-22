@@ -1,18 +1,15 @@
 <script setup>
-import { ref, computed, reactive } from 'vue'
-import MasonryGrid from './MasonryGrid.vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { PageFlip } from 'page-flip'
 
 /**
- * Guestbook 视图
- * - 软木板背景 + 便签瀑布流
- * - 鼠标悬浮便签：上浮 + 加深阴影 + 轻微增加旋转
- * - 顶部"留下便签"按钮 → 内联表单（淡入 0.22s）→ 提交后新便签以动画进入
- *
- * 数据为前端本地假数据（占位），等后端 API 就绪后替换 fetch 即可。
- * 字段结构是合同：{ id, name, date, body, rating? }
+ * Guestbook 留言簿视图
+ * - 3D 翻页效果（使用 page-flip 库）
+ * - 每一页显示一条用户留言
+ * - 支持鼠标拖拽翻页和触摸翻页
+ * - 顶部"留下便签"按钮 → 内联表单
  */
 
-// 调色板按 brief 严格取色（占比百分比用于首次随机）
 const PALETTE = [
   { bg: '#FFFA9E', weight: 40 }, // 明黄
   { bg: '#A8E6CF', weight: 20 }, // 淡蓝
@@ -38,39 +35,25 @@ function makeNote({ name, date, body, rating }) {
     date,
     body,
     rating: rating ?? 0,
-    color: pickColor(),
-    // 旋转角度 -5 ~ 8 度，按 brief
-    rotate: (Math.random() * 13 - 5).toFixed(2),
-    // 用来错落进入动画
-    enterDelay: Math.floor(Math.random() * 240)
+    color: pickColor()
   }
 }
 
 const SEED_NOTES = [
-  { name: 'Iris Wen', date: '2025.05.12', body: '夜街那组太有氛围感了,霓虹路口简直像一部王家卫。', rating: 5 },
+  { name: 'Iris Wen', date: '2025.05.12', body: '夜街那组太有氛围感了，霓虹路口简直像一部王家卫。', rating: 5 },
   { name: 'Marco V.', date: '2025.05.09', body: '海雾那张在 100% 显示下细节惊人。一直在猜是降噪前的 raw。', rating: 4 },
   { name: '屿墙的猫', date: '2025.04.28', body: '街拍系列像是把上海折叠成了一张明信片。已收藏。', rating: 5 },
-  { name: '胶片偏执者', date: '2025.04.21', body: '颗粒残像这一档我盯了很久,想问下 Tri-X 推到多少?谢谢。', rating: 4 },
+  { name: '胶片偏执者', date: '2025.04.21', body: '颗粒残像这一档我盯了很久，想问下 Tri-X 推到多少？谢谢。', rating: 4 },
   { name: '夜行者', date: '2025.04.14', body: '峡湾之晨的色温控制得太冷静了。推荐用做屏保。', rating: 5 },
-  { name: 'Hannah L.', date: '2025.03.30', body: '留言墙能换便签颜色这件事,小孩很开心。', rating: 4 },
-  { name: '阿松', date: '2025.03.22', body: '下一辑能不能去拍一次舟山?想去那边很久了。', rating: 3 },
-  { name: '陆也', date: '2025.03.15', body: '主页大图裁剪到 30% 顶部很聪明,眼睛一下就到位。', rating: 5 },
-  { name: '栗子茶', date: '2025.03.08', body: '雨天那组让我想学摄影,虽然大概会三天打鱼。', rating: 4 }
+  { name: 'Hannah L.', date: '2025.03.30', body: '留言墙能换便签颜色这件事，小孩很开心。', rating: 4 },
+  { name: '阿松', date: '2025.03.22', body: '下一辑能不能去拍一次舟山？想去那边很久了。', rating: 3 },
+  { name: '陆也', date: '2025.03.15', body: '主页大图裁剪到 30% 顶部很聪明，眼睛一下就到位。', rating: 5 },
+  { name: '栗子茶', date: '2025.03.08', body: '雨天那组让我想学摄影，虽然大概会三天打鱼。', rating: 4 }
 ]
 
 const notes = ref(SEED_NOTES.map(makeNote))
-
-// 形式契约：MasonryGrid 接受 items + 触发 card-click
-// 我们把 note 包装成统一 item,这样不需要改 MasonryGrid
-const items = computed(() =>
-  notes.value.map((n, idx) => ({
-    id: n.id,
-    width: 320,
-    height: 220,
-    _note: n,
-    _index: idx
-  }))
-)
+const bookContainer = ref(null)
+let pageFlip = null
 
 // 顶部表单
 const formOpen = ref(false)
@@ -104,44 +87,79 @@ function submitNote() {
     date: `${yyyy}.${mm}.${dd}`,
     rating: draft.rating
   })
-  // 顶部插入,进入动画触发
   notes.value = [newNote, ...notes.value]
-  // 重置
   draft.name = ''
   draft.body = ''
   draft.rating = 0
   errors.name = ''
   errors.body = ''
   formOpen.value = false
+  // 重新初始化翻页书
+  initPageFlip()
 }
 
 function setRating(n) {
   draft.rating = draft.rating === n ? 0 : n
 }
 
-// masonry 重排:把 MasonryGrid 的内部卡片高度交给 .note 自适应
-// 我们让卡片宽度固定 ~320px、高度根据内容自然撑开 140 ~ 220
-// MasonryGrid 已支持任意 height,把 height 字段改为可变量
-const gridItems = computed(() =>
-  items.value.map((it) => {
-    const len = (it._note.body || '').length
-    // 简单模型: 短 140, 中 180, 长 220
-    let h = 160
-    if (len > 60) h = 200
-    if (len > 110) h = 240
-    return { ...it, width: 320, height: h }
+// 初始化翻页书
+function initPageFlip() {
+  if (pageFlip) {
+    pageFlip.destroy()
+    pageFlip = null
+  }
+  
+  nextTick(() => {
+    if (bookContainer.value) {
+      pageFlip = new PageFlip(bookContainer.value, {
+        width: 420,
+        height: 560,
+        size: 'stretch',
+        minWidth: 315,
+        maxWidth: 600,
+        minHeight: 420,
+        maxHeight: 800,
+        drawShadow: true,
+        flippingTime: 800,
+        usePortrait: true,
+        autoSize: true,
+        maxShadowOpacity: 0.4,
+        showCover: true,
+        mobileScrollSupport: false
+      })
+      
+      const pages = document.querySelectorAll('.guestbook-page')
+      if (pages.length > 0) {
+        pageFlip.loadFromHTML(Array.from(pages))
+      }
+    }
   })
-)
+}
+
+onMounted(() => {
+  initPageFlip()
+})
+
+onUnmounted(() => {
+  if (pageFlip) {
+    pageFlip.destroy()
+  }
+})
+
+// 生成星星显示
+function getStars(rating) {
+  return '★'.repeat(rating) + '☆'.repeat(5 - rating)
+}
 </script>
 
 <template>
-  <section class="guestbook" aria-label="留言墙">
+  <section class="guestbook" aria-label="留言簿">
     <!-- 顶部栏:标题 + 计数 + 操作 -->
     <header class="guestbook__top">
       <div class="guestbook__title-wrap">
-        <h1 class="guestbook__title">留言墙</h1>
+        <h1 class="guestbook__title">留言簿</h1>
         <span class="guestbook__title-en">Guestbook</span>
-        <span class="guestbook__count">{{ notes.length }} 张便签</span>
+        <span class="guestbook__count">{{ notes.length }} 条留言</span>
       </div>
 
       <div class="guestbook__actions">
@@ -153,7 +171,7 @@ const gridItems = computed(() =>
           @click="openForm"
         >
           <span class="guestbook__leave-btn-dot" aria-hidden="true"></span>
-          留下便签
+          留下足迹
         </button>
       </div>
     </header>
@@ -220,38 +238,91 @@ const gridItems = computed(() =>
       </div>
     </form>
 
-    <!-- 软木板 + 便签瀑布流(外裹木质边框) -->
-    <div class="guestbook__frame" aria-label="留言列表">
-      <section class="guestbook__board">
-        <div v-if="notes.length === 0" class="guestbook__empty">
-          <p>还没有便签。留下第一张吧。</p>
+    <!-- 3D翻页留言簿 -->
+    <div class="guestbook__book-wrapper">
+      <div ref="bookContainer" class="guestbook__book">
+        <!-- 封面（第一页） -->
+        <div class="guestbook-page guestbook-cover stf__hard stf__item">
+          <div class="cover__inner">
+            <div class="cover__ornament cover__ornament--top">
+              <svg viewBox="0 0 60 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 10 Q15 0, 30 10 Q45 20, 60 10" stroke="currentColor" stroke-width="1" fill="none"/>
+                <circle cx="30" cy="10" r="3" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="cover__content">
+              <h2 class="cover__title-zh">留 言 簿</h2>
+              <h3 class="cover__title-en">Guestbook</h3>
+              <p class="cover__subtitle">每一张照片，都是一段故事</p>
+              <p class="cover__subtitle-en">Every photo tells a story</p>
+            </div>
+            <div class="cover__divider"></div>
+            <div class="cover__meta">
+              <span class="cover__count">{{ notes.length }} 条留言</span>
+            </div>
+            <div class="cover__ornament cover__ornament--bottom">
+              <svg viewBox="0 0 80 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M40 5 L40 25 M30 15 L40 5 L50 15" stroke="currentColor" stroke-width="1" fill="none"/>
+                <path d="M20 20 Q30 15, 40 20 Q50 25, 60 20" stroke="currentColor" stroke-width="0.8" fill="none"/>
+              </svg>
+            </div>
+            <div class="cover__hint">
+              <span>↓ 翻开第一页</span>
+            </div>
+          </div>
         </div>
 
-        <MasonryGrid
-          v-else
-          :items="gridItems"
-          :gap="28"
-          :breakpoints="{ 0: 1, 600: 2, 900: 3, 1300: 4 }"
+        <!-- 动态渲染的页面 -->
+        <div
+          v-for="(note, index) in notes"
+          :key="note.id"
+          class="guestbook-page"
+          :class="{
+            'stf__item': true
+          }"
+          :style="{ '--paper': note.color }"
         >
-          <template #default="{ item }">
-            <article
-              class="note"
-              :style="{
-                '--rotate': item._note.rotate + 'deg',
-                '--enter-delay': item._note.enterDelay + 'ms',
-                '--paper': item._note.color
-              }"
-            >
-              <span class="note__pin" aria-hidden="true"></span>
-              <header class="note__header">
-                <span class="note__name">{{ item._note.name }}</span>
-                <time class="note__date">{{ item._note.date }}</time>
-              </header>
-              <p class="note__body">{{ item._note.body }}</p>
-            </article>
-          </template>
-        </MasonryGrid>
-      </section>
+          <div class="page__inner">
+            <header class="page__header">
+              <span class="page__name">{{ note.name }}</span>
+              <span class="page__date">{{ note.date }}</span>
+            </header>
+            <div class="page__rating" v-if="note.rating > 0">
+              <span class="page__stars">{{ getStars(note.rating) }}</span>
+            </div>
+            <p class="page__body">{{ note.body }}</p>
+            <footer class="page__footer">
+              <span class="page__number">{{ index + 1 }} / {{ notes.length }}</span>
+            </footer>
+          </div>
+        </div>
+
+        <!-- 封底（最后一页） -->
+        <div class="guestbook-page guestbook-backcover stf__hard stf__item">
+          <div class="backcover__inner">
+            <div class="backcover__content">
+              <div class="backcover__icon">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                  <circle cx="24" cy="24" r="12" stroke="currentColor" stroke-width="1" fill="none"/>
+                  <circle cx="24" cy="24" r="4" fill="currentColor"/>
+                  <path d="M24 4 L24 10 M24 38 L24 44 M4 24 L10 24 M38 24 L44 24" stroke="currentColor" stroke-width="1"/>
+                </svg>
+              </div>
+              <p class="backcover__quote">"光影定格瞬间，留言留存温度"</p>
+              <p class="backcover__thanks">感谢你的足迹</p>
+              <p class="backcover__invite">期待下次相遇</p>
+            </div>
+            <div class="backcover__divider"></div>
+            <div class="backcover__meta">
+              <span class="backcover__label">JT Photography</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 提示文字 -->
+      <p class="guestbook__hint">拖拽页面边缘翻页，或使用鼠标拖拽翻页</p>
     </div>
   </section>
 </template>
@@ -265,7 +336,6 @@ const gridItems = computed(() =>
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* 占满主区可见高度,留出顶部栏位的视觉呼吸 */
   min-height: calc(100vh - var(--space-5) * 2);
 }
 
@@ -448,7 +518,6 @@ const gridItems = computed(() =>
 }
 
 .guestbook__stars-field legend {
-  /* legend 不允许全局 margin,这里靠定位覆盖 */
   padding: 0 0 6px;
   width: 100%;
 }
@@ -517,281 +586,126 @@ const gridItems = computed(() =>
 }
 
 /* ====================================================================
-   软木板表面
-   - 基色: #8B5A2B (warm brown)
-   - 多层 radial-gradient 模拟木纹
-   - 叠加 SVG 噪点作为颗粒
-   - background-attachment: fixed 让滚动时背景静止 (按 brief)
+   3D翻页留言簿容器
 ==================================================================== */
-/* 木质外框:
-   - 4 个绝对定位的边缘条 + 4 个角块,通过线性渐变模拟木纹 + 内外倒角阴影
-   - 厚度 ~22px,主体颜色取自截图:浅米色木 ( #d9b78b → #b07e4a ) + 微高光 + 暗缝阴影
-   - 框架整体投影到页面上 (drop-shadow),内壁向软木板投阴影做"嵌入"感
-==================================================================== */
-.guestbook__frame {
-  position: relative;
-  flex: 1;
-  display: block;
-  padding: 22px;
-  background:
-    linear-gradient(#4a3020, #4a3020) padding-box,
-    linear-gradient(180deg, #ecd9aa 0%, #d9b87a 35%, #c49a62 70%, #b08552 100%) border-box;
-  border: 0 solid transparent;
-  box-shadow:
-    0 18px 48px rgba(90, 50, 15, 0.18),
-    0 4px 12px rgba(90, 50, 15, 0.14),
-    inset 0 0 0 1px rgba(90, 60, 25, 0.30),
-    inset 0 -2px 6px rgba(90, 60, 25, 0.18);
-}
-
-/* 4 条木纹条幅:模拟拼接板 + 细纹理 */
-.guestbook__frame::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    repeating-linear-gradient(
-      180deg,
-      rgba(140, 95, 45, 0.07) 0,
-      rgba(140, 95, 45, 0.07) 1px,
-      transparent 1px,
-      transparent 4px
-    ),
-    repeating-linear-gradient(
-      180deg,
-      rgba(255, 245, 215, 0.04) 0,
-      rgba(255, 245, 215, 0.04) 1px,
-      transparent 1px,
-      transparent 9px
-    );
-}
-
-/* 角落拼接缝:水平 + 垂直中线略深的接缝 */
-.guestbook__frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(90, 60, 25, 0.18), rgba(90, 60, 25, 0) 2px),
-    linear-gradient(0deg, rgba(90, 60, 25, 0.18), rgba(90, 60, 25, 0) 2px),
-    linear-gradient(90deg, rgba(90, 60, 25, 0.18), rgba(90, 60, 25, 0) 2px),
-    linear-gradient(270deg, rgba(90, 60, 25, 0.18), rgba(90, 60, 25, 0) 2px);
-}
-
-/* 软木板表面(在框内)
-   - 真实软木板质感由 5 层叠加:
-     1) 暖棕基色
-     2) 几个大块不规则深棕色斑(径向渐变)
-     3) 高密度小暗点(cork 颗粒) — radial-gradient 平铺
-     4) 稀疏小亮点 — radial-gradient 平铺
-     5) SVG turbulence 噪点(让边缘不齐) — ::before
-     6) 边缘微暗角 — ::after
-   - 颜色取自实际软木板图像:基色 #b48a5a,深斑 #6e4a25,亮点 #e8c896
-==================================================================== */
-.guestbook__board {
-  position: relative;
-  width: 100%;
-  padding: 56px 32px 64px;
-  background-color: #b48a5a;
-  background-image:
-    /* 大块不规则深棕斑(4 个) */
-    radial-gradient(ellipse 520px 360px at 12% 18%, rgba(80, 45, 18, 0.28), transparent 70%),
-    radial-gradient(ellipse 460px 320px at 88% 24%, rgba(60, 35, 14, 0.22), transparent 70%),
-    radial-gradient(ellipse 600px 380px at 28% 82%, rgba(70, 40, 16, 0.26), transparent 70%),
-    radial-gradient(ellipse 480px 340px at 92% 88%, rgba(80, 50, 22, 0.24), transparent 70%),
-    /* 中等深色斑(补充 patchy 感) */
-    radial-gradient(ellipse 280px 200px at 60% 12%, rgba(110, 70, 36, 0.18), transparent 75%),
-    radial-gradient(ellipse 320px 220px at 8% 60%, rgba(110, 70, 36, 0.16), transparent 75%),
-    radial-gradient(ellipse 260px 180px at 70% 70%, rgba(110, 70, 36, 0.18), transparent 75%),
-    /* 高密度暗点: cork 颗粒的主体
-       (radial-gradient 单点 + 小尺寸平铺,产生成千上万的点) */
-    radial-gradient(circle at 50% 50%, rgba(50, 28, 10, 0.55) 0.6px, transparent 1.2px),
-    /* 稀疏亮点:模拟 cork 表面的微高光 */
-    radial-gradient(circle at 50% 50%, rgba(255, 235, 200, 0.45) 0.5px, transparent 1.0px),
-    /* 整体基础径向:让中心略亮、四角略暗(进一步强化 cork 的微反射) */
-    radial-gradient(ellipse at center, rgba(255, 230, 195, 0.10), transparent 65%);
-  background-size:
-    auto, auto, auto, auto,
-    auto, auto, auto,
-    7px 7px,
-    13px 13px,
-    auto;
-  background-position:
-    0 0, 0 0, 0 0, 0 0,
-    0 0, 0 0, 0 0,
-    0 0,
-    3px 4px,
-    0 0;
-  background-repeat:
-    no-repeat, no-repeat, no-repeat, no-repeat,
-    no-repeat, no-repeat, no-repeat,
-    repeat,
-    repeat,
-    no-repeat;
-  background-attachment: local, local, local, local, local, local, local, local, local, local;
-  box-shadow:
-    inset 0 6px 18px rgba(0, 0, 0, 0.45),
-    inset 0 -3px 12px rgba(0, 0, 0, 0.35),
-    inset 4px 0 14px rgba(0, 0, 0, 0.28),
-    inset -4px 0 14px rgba(0, 0, 0, 0.28);
-}
-
-/* 颗粒不齐感:SVG turbulence,让点阵的"死板网格"被打破 */
-.guestbook__board::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.20  0 0 0 0 0.12  0 0 0 0 0.05  0 0 0 0.42 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-  opacity: 0.55;
-  mix-blend-mode: multiply;
-}
-
-/* 暗角:让软木板在木框内显得"沉下去" */
-.guestbook__board::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.28) 100%);
-}
-
-/* 空状态 */
-.guestbook__empty {
+.guestbook__book-wrapper {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  padding: var(--space-5) 0;
+  flex: 1;
+}
+
+.guestbook__book {
+  width: 100%;
+  max-width: 600px;
+  min-height: 420px;
+  display: flex;
   justify-content: center;
-  min-height: 240px;
-  font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  color: rgba(255, 250, 240, 0.86);
+  align-items: center;
+}
+
+.guestbook__hint {
+  margin-top: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--c-mid);
+  text-align: center;
 }
 
 /* ====================================================================
-   便签 (.note)
-   - 通过 CSS 变量接住随机色与旋转
-   - :hover 上浮 + 阴影加深 + 轻微增大旋转 (brief 方案一)
-   - 顶部图钉 ::before
+   翻页书页面样式
 ==================================================================== */
-.note {
-  position: relative;
+.guestbook-page {
+  background: var(--paper, #FFFA9E);
+  box-shadow: 
+    2px 4px 12px rgba(0, 0, 0, 0.15),
+    inset 0 0 40px rgba(0, 0, 0, 0.03);
+  border-radius: 2px;
+}
+
+.guestbook-page.stf__hard {
+  background: linear-gradient(135deg, #f5f0e6 0%, #e8e0d0 100%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.page__inner {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 22px 22px 18px;
-  width: 100%;
   height: 100%;
-  background: var(--paper, #FFFA9E);
-  color: #333333;
+  padding: 40px 32px;
   font-family: var(--font-elegance);
-  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.18);
-  transform-origin: 50% 0%;
-  transform: rotate(var(--rotate, 0deg));
-  transition:
-    transform var(--t-base) var(--ease-out),
-    box-shadow var(--t-base) var(--ease-out);
-  animation: noteIn 0.55s var(--ease-out) both;
-  animation-delay: var(--enter-delay, 0ms);
+  color: #333333;
 }
 
-@keyframes noteIn {
-  from {
-    opacity: 0;
-    transform: rotate(calc(var(--rotate, 0deg) - 6deg)) translateY(-10px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(var(--rotate, 0deg)) translateY(0) scale(1);
-  }
-}
-
-/* 图钉 */
-.note__pin {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #e88a82, #b94740 65%, #7a2419);
-  box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.35),
-    inset -1px -1px 1px rgba(0, 0, 0, 0.25),
-    inset 1px 1px 1px rgba(255, 255, 255, 0.35);
-}
-.note__pin::after {
-  /* 高光小点 */
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.note__header {
+.page__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.15);
+  margin-bottom: 16px;
 }
 
-.note__name {
+.page__name {
   font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 400;
   color: #111111;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
-.note__date {
-  font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
+.page__date {
+  font-family: var(--font-mono);
   font-size: 12px;
-  font-weight: 400;
   color: #888888;
   letter-spacing: 0.06em;
 }
 
-.note__body {
+.page__rating {
+  margin-bottom: 12px;
+}
+
+.page__stars {
+  font-size: 14px;
+  color: #c89b2c;
+  letter-spacing: 2px;
+}
+
+.page__body {
   flex: 1;
   margin: 0;
   font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
-  font-size: 16px;
-  line-height: 1.55;
+  font-size: 18px;
+  line-height: 1.7;
   color: #333333;
   word-break: break-word;
 }
 
-/* 悬浮:方案一 (上浮 + 阴影 + 角度 +3deg) */
-.note:hover {
-  transform: rotate(calc(var(--rotate, 0deg) + 3deg)) translateY(-6px) scale(1.02);
-  box-shadow: 6px 12px 20px rgba(0, 0, 0, 0.28);
-  z-index: 2;
+.page__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.15);
+  margin-top: 16px;
 }
 
-.note:focus-within {
-  transform: rotate(calc(var(--rotate, 0deg) + 3deg)) translateY(-6px) scale(1.02);
-  box-shadow: 6px 12px 20px rgba(0, 0, 0, 0.28);
-  z-index: 2;
+.page__number {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #888888;
+  letter-spacing: 0.1em;
 }
 
 /* ====================================================================
    减弱动效:用户偏好 prefers-reduced-motion
 ==================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  .note,
   .guestbook__form {
     animation: none !important;
     transition: none !important;
-  }
-  .note:hover {
-    transform: rotate(var(--rotate, 0deg));
   }
 }
 </style>
