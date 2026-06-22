@@ -248,9 +248,6 @@ const gridItems = computed(() =>
                 <time class="note__date">{{ item._note.date }}</time>
               </header>
               <p class="note__body">{{ item._note.body }}</p>
-              <footer v-if="item._note.rating > 0" class="note__rating" aria-label="评分">
-                <span v-for="n in 5" :key="n" :class="{ 'is-on': item._note.rating >= n }">★</span>
-              </footer>
             </article>
           </template>
         </MasonryGrid>
@@ -537,16 +534,14 @@ const gridItems = computed(() =>
   display: block;
   padding: 22px;
   background:
-    /* 内壁倒角:深凹槽一圈 */
-    linear-gradient(#1a0e06, #1a0e06) padding-box,
-    /* 木纹基色 + 暗角 + 微弱横向纹理 */
-    linear-gradient(180deg, #e3c396 0%, #d2a877 35%, #b48457 70%, #8d5d34 100%) border-box;
+    linear-gradient(#4a3020, #4a3020) padding-box,
+    linear-gradient(180deg, #ecd9aa 0%, #d9b87a 35%, #c49a62 70%, #b08552 100%) border-box;
   border: 0 solid transparent;
   box-shadow:
-    0 18px 48px rgba(0, 0, 0, 0.22),
-    0 4px 12px rgba(0, 0, 0, 0.18),
-    inset 0 0 0 1px rgba(255, 240, 210, 0.35),
-    inset 0 -2px 6px rgba(0, 0, 0, 0.28);
+    0 18px 48px rgba(90, 50, 15, 0.18),
+    0 4px 12px rgba(90, 50, 15, 0.14),
+    inset 0 0 0 1px rgba(90, 60, 25, 0.30),
+    inset 0 -2px 6px rgba(90, 60, 25, 0.18);
 }
 
 /* 4 条木纹条幅:模拟拼接板 + 细纹理 */
@@ -558,15 +553,15 @@ const gridItems = computed(() =>
   background-image:
     repeating-linear-gradient(
       180deg,
-      rgba(70, 40, 18, 0.10) 0,
-      rgba(70, 40, 18, 0.10) 1px,
+      rgba(140, 95, 45, 0.07) 0,
+      rgba(140, 95, 45, 0.07) 1px,
       transparent 1px,
       transparent 4px
     ),
     repeating-linear-gradient(
       180deg,
-      rgba(255, 240, 210, 0.05) 0,
-      rgba(255, 240, 210, 0.05) 1px,
+      rgba(255, 245, 215, 0.04) 0,
+      rgba(255, 245, 215, 0.04) 1px,
       transparent 1px,
       transparent 9px
     );
@@ -579,14 +574,10 @@ const gridItems = computed(() =>
   inset: 0;
   pointer-events: none;
   background:
-    /* 顶部接缝 */
-    linear-gradient(180deg, rgba(0, 0, 0, 0.30), rgba(0, 0, 0, 0) 2px),
-    /* 底部接缝 */
-    linear-gradient(0deg, rgba(0, 0, 0, 0.30), rgba(0, 0, 0, 0) 2px),
-    /* 左侧接缝 */
-    linear-gradient(90deg, rgba(0, 0, 0, 0.30), rgba(0, 0, 0, 0) 2px),
-    /* 右侧接缝 */
-    linear-gradient(270deg, rgba(0, 0, 0, 0.30), rgba(0, 0, 0, 0) 2px);
+    linear-gradient(180deg, rgba(90, 60, 25, 0.18), rgba(90, 60, 25, 0) 2px),
+    linear-gradient(0deg, rgba(90, 60, 25, 0.18), rgba(90, 60, 25, 0) 2px),
+    linear-gradient(90deg, rgba(90, 60, 25, 0.18), rgba(90, 60, 25, 0) 2px),
+    linear-gradient(270deg, rgba(90, 60, 25, 0.18), rgba(90, 60, 25, 0) 2px);
 }
 
 /* 软木板表面(在框内)
@@ -752,16 +743,16 @@ const gridItems = computed(() =>
 }
 
 .note__name {
-  font-family: var(--font-elegance);
-  font-size: 16px;
-  font-weight: 700;
+  font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
+  font-size: 20px;
+  font-weight: 400;
   color: #111111;
   letter-spacing: 0.01em;
 }
 
 .note__date {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
+  font-size: 12px;
   font-weight: 400;
   color: #888888;
   letter-spacing: 0.06em;
@@ -770,23 +761,11 @@ const gridItems = computed(() =>
 .note__body {
   flex: 1;
   margin: 0;
-  font-family: var(--font-elegance);
-  font-size: 14.5px;
+  font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
+  font-size: 16px;
   line-height: 1.55;
   color: #333333;
   word-break: break-word;
-}
-
-.note__rating {
-  display: inline-flex;
-  gap: 2px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: rgba(120, 90, 20, 0.35);
-}
-
-.note__rating span.is-on {
-  color: #c89b2c;
 }
 
 /* 悬浮:方案一 (上浮 + 阴影 + 角度 +3deg) */
