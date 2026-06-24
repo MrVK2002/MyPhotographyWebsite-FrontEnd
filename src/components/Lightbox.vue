@@ -64,7 +64,14 @@ onBeforeUnmount(() => {
 const exifFields = computed(() => {
   const exif = current.value?.lightbox?.exif
   if (!exif) return []
-  return [exif.camera, exif.aperture, exif.shutter, exif.iso, exif.date].filter(Boolean)
+  const fields = [exif.camera, exif.aperture, exif.shutter, exif.iso].filter(Boolean)
+  return fields
+})
+
+const exifDate = computed(() => {
+  const dateStr = current.value?.lightbox?.exif?.date
+  if (!dateStr) return null
+  return dateStr.replace(/\./g, '-')
 })
 
 const hasMany = computed(() => state.items.length > 1)
@@ -141,30 +148,32 @@ defineExpose({ openByIndex })
         </svg>
       </button>
 
-      <!-- 图片舞台 -->
-      <figure class="lb__stage">
-        <Transition name="lb-img" mode="out-in">
-          <img
-            :key="current.id"
-            class="lb__img"
-            :src="current.lightbox.src"
-            :alt="current.alt || current.lightbox.title"
-            :width="current.lightbox.width"
-            :height="current.lightbox.height"
-            draggable="false"
-          />
-        </Transition>
+      <!-- 图片与信息栏容器 -->
+      <div class="lb__frame">
+        <div class="lb__stage">
+          <Transition name="lb-img" mode="out-in">
+            <img
+              :key="current.id"
+              class="lb__img"
+              :src="current.lightbox.src"
+              :alt="current.alt || current.lightbox.title"
+              :width="current.lightbox.width"
+              :height="current.lightbox.height"
+              draggable="false"
+            />
+          </Transition>
+        </div>
 
-        <!-- EXIF 信息栏 -->
+        <!-- 图片信息栏：跟随图片左下角 -->
         <figcaption v-if="current.lightbox.title || exifFields.length" class="lb__caption">
-          <div v-if="current.lightbox.title" class="lb__caption-title">
-            {{ current.lightbox.title }}
+          <div v-if="current.lightbox.title || exifDate" class="lb__caption-title">
+            {{ current.lightbox.title }}<template v-if="current.lightbox.title && exifDate"> | </template>{{ exifDate }}
           </div>
           <div v-if="exifFields.length" class="lb__caption-exif">
-            {{ exifFields.join('  ·  ') }}
+            {{ exifFields.join(' ') }}
           </div>
         </figcaption>
-      </figure>
+      </div>
     </div>
   </Transition>
 </template>
@@ -177,8 +186,8 @@ defineExpose({ openByIndex })
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 与 PhotoSwipe 默认一致的内边距 */
-  padding: 24px 24px 96px;
+  /* 上下留出间距 */
+  padding: 90px 24px 80px;
 }
 
 .lb__bg {
@@ -186,7 +195,7 @@ defineExpose({ openByIndex })
   inset: 0;
   background: #000;
   opacity: 0.96;
-  cursor: zoom-out;
+  cursor: default;
 }
 
 /* 按钮：直角、白色 70% 不透明 */
@@ -233,13 +242,19 @@ defineExpose({ openByIndex })
   right: 16px;
 }
 
-/* 图片舞台：占满可用空间 */
-.lb__stage {
+/* 图片与信息栏容器：垂直堆叠，对齐左边缘 */
+.lb__frame {
   position: relative;
   z-index: 1;
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 图片舞台 */
+.lb__stage {
   max-width: 100%;
-  max-height: 100%;
+  max-height: calc(100vh - 24px - 80px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,7 +263,7 @@ defineExpose({ openByIndex })
 .lb__img {
   display: block;
   max-width: 100%;
-  max-height: calc(100vh - 24px - 96px);
+  max-height: calc(100vh - 48px - 80px);
   width: auto;
   height: auto;
   object-fit: contain;
@@ -265,42 +280,37 @@ defineExpose({ openByIndex })
   left: 16px;
   z-index: 2;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 15px;
   letter-spacing: 0.05em;
   color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
 }
 
-/* EXIF 信息栏：固定在视口底部 */
+/* 图片信息栏：跟随图片左下角 */
 .lb__caption {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 16px 24px 20px;
-  text-align: center;
+  position: relative;
+  width: 100%;
+  padding: 10px 0 0;
+  text-align: left;
   color: #fff;
   pointer-events: none;
 }
 
 .lb__caption-title {
   font-family: var(--font-hans);
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 400;
-  letter-spacing: 0.01em;
-  color: rgba(255, 255, 255, 0.78);
-  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2px;
 }
 
 .lb__caption-exif {
   font-family: var(--font-elegance);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 400;
-  letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.7);
   text-transform: none;
 }
 
