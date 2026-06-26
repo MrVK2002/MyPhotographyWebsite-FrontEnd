@@ -2,26 +2,20 @@
 import { ref, onMounted } from 'vue'
 import gsap from 'gsap'
 import SocialIcons from './SocialIcons.vue'
+import TiltedCard from './TiltedCard.vue'
 
-const photoRef = ref(null)
 const contentRef = ref(null)
 
 onMounted(() => {
   const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
 
-  // 1. 照片从左侧滑入
-  tl.fromTo(photoRef.value,
-    { x: -80, opacity: 0, scale: 1.05 },
-    { x: 0, opacity: 1, scale: 1, duration: 1.2 }
-  )
-
-  // 2. 姓名两行依次弹出
+  // 1. 姓名两行依次弹出
   const firstName = contentRef.value?.querySelector('.name-first')
   const lastName = contentRef.value?.querySelector('.name-last')
-  if (firstName) tl.fromTo(firstName, { y: '100%', opacity: 0 }, { y: '0%', opacity: 1, duration: 0.7 }, '-=1')
+  if (firstName) tl.fromTo(firstName, { y: '100%', opacity: 0 }, { y: '0%', opacity: 1, duration: 0.7 })
   if (lastName) tl.fromTo(lastName, { y: '100%', opacity: 0 }, { y: '0%', opacity: 1, duration: 0.7 }, '-=0.5')
 
-  // 3. 副标题、简介、图标依次淡入
+  // 2. 副标题、简介、图标依次淡入
   tl.fromTo(contentRef.value?.querySelector('.about-page__title'),
     { opacity: 0, y: 20 },
     { opacity: 1, y: 0, duration: 0.5 },
@@ -44,12 +38,16 @@ onMounted(() => {
   <section ref="sectionRef" class="about-page" aria-label="关于我">
     <!-- 左侧：黑白肖像 -->
     <div class="about-page__photo-wrap" aria-hidden="true">
-      <img
-        ref="photoRef"
-        class="about-page__photo"
-        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=85"
-        alt="Leo Liang 肖像"
-        loading="eager"
+      <TiltedCard
+        image-src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=85"
+        alt-text="Leo Liang 肖像"
+        container-height="100%"
+        container-width="100%"
+        image-height="100%"
+        image-width="100%"
+        caption-text="Leo Liang"
+        :rotate-amplitude="2"
+        :scale-on-hover="1.04"
       />
     </div>
 
@@ -95,17 +93,8 @@ onMounted(() => {
   position: relative;
   flex: 0 0 50%;
   height: 100%;
-  overflow: hidden;
-}
-
-.about-page__photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 30% 0;
-  filter: grayscale(100%);
-  display: block;
-  border-radius: 5px;
+  padding: 40px;
+  box-sizing: border-box;
 }
 
 /* 右侧内容 */
