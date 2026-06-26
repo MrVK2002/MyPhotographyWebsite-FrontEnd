@@ -1,15 +1,14 @@
 <script setup>
-import { LazyImg } from 'vue-waterfall-plugin-next'
-
 const props = defineProps({
   item: { type: Object, required: true },
-  index: { type: Number, default: 0 },
   isHovered: { type: Boolean, default: false },
   tiltX: { type: String, default: '0deg' },
   tiltY: { type: String, default: '0deg' }
 })
 
 const emit = defineEmits(['mouse-move', 'mouse-enter', 'mouse-leave', 'click'])
+
+const aspectRatio = (props.item.height || 4) / (props.item.width || 3)
 </script>
 
 <template>
@@ -17,7 +16,6 @@ const emit = defineEmits(['mouse-move', 'mouse-enter', 'mouse-leave', 'click'])
     class="waterfall-card"
     :class="{ 'is-hovered': isHovered }"
     :style="{
-      '--stagger-delay': Math.min(index, 12) * 40 + 'ms',
       '--tilt-x': tiltX,
       '--tilt-y': tiltY
     }"
@@ -26,12 +24,18 @@ const emit = defineEmits(['mouse-move', 'mouse-enter', 'mouse-leave', 'click'])
     @mouseleave="() => emit('mouse-leave')"
     @click="() => emit('click')"
   >
-    <LazyImg
-      :url="item.src"
-      :ratio="(item.height || 4) / (item.width || 5)"
-      class="waterfall-card__img"
-    />
-    <!-- 高光层：模拟光从上方斜照到被抬起的纸面 -->
+    <div
+      class="waterfall-card__img-wrap"
+      :style="{ paddingBottom: (aspectRatio * 100) + '%' }"
+    >
+      <img
+        :src="item.src"
+        :alt="item.title || 'Gallery'"
+        class="waterfall-card__img"
+        loading="lazy"
+        draggable="false"
+      />
+    </div>
     <div class="waterfall-card__sheen" aria-hidden="true" />
   </div>
 </template>
@@ -42,10 +46,6 @@ const emit = defineEmits(['mouse-move', 'mouse-enter', 'mouse-leave', 'click'])
   overflow: hidden;
   background: var(--c-mist);
   cursor: pointer;
-  opacity: 0;
-  transform: scale(0.96);
-  animation: fadeIn 0.5s var(--ease-out) forwards;
-  animation-delay: var(--stagger-delay, 0ms);
   transform-style: preserve-3d;
   perspective: 1000px;
   transform-origin: center center;
@@ -53,7 +53,8 @@ const emit = defineEmits(['mouse-move', 'mouse-enter', 'mouse-leave', 'click'])
     transform 0.4s cubic-bezier(0.2, 0.85, 0.3, 1.15),
     box-shadow 0.4s cubic-bezier(0.2, 0.85, 0.3, 1.15);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  will-change: transform, box-shadow;
+  border-radius: 3px;
+  height: 100%;
 }
 
 .waterfall-card.is-hovered {
@@ -66,6 +67,25 @@ const emit = defineEmits(['mouse-move', 'mouse-enter', 'mouse-leave', 'click'])
     0 14px 28px -10px rgba(0, 0, 0, 0.28),
     0 28px 56px -14px rgba(0, 0, 0, 0.18);
   z-index: 10;
+}
+
+.waterfall-card__img-wrap {
+  position: relative;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+}
+
+.waterfall-card__img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+  display: block;
 }
 
 .waterfall-card__sheen {
@@ -87,27 +107,9 @@ const emit = defineEmits(['mouse-move', 'mouse-enter', 'mouse-leave', 'click'])
   opacity: 1;
 }
 
-.waterfall-card__img {
-  display: block;
-  width: 100%;
-  height: auto;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-@keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .waterfall-card {
-    opacity: 1;
-    transform: none;
-    animation: none !important;
-  }
-  .waterfall-card.is-hovered {
-    transform: none;
+    transform: none !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   }
   .waterfall-card__sheen {
