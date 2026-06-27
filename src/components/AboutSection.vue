@@ -80,6 +80,14 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@font-face {
+  font-family: 'Aidian-SignatureTi';
+  src: url('@/assets/font/Aidian-SignatureTi.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 .about-page {
   display: flex;
   width: 100%;
@@ -112,12 +120,12 @@ onMounted(() => {
   gap: 0;
 }
 
-/* 大标题：衬线 ultra-wide */
+/* 大标题：签名字体 */
 .about-page__name {
-  font-family: 'Newsreader', Georgia, 'Songti SC', serif;
-  font-size: clamp(52px, 6vw, 88px);
+  font-family: 'Aidian-SignatureTi', 'Newsreader', Georgia, 'Songti SC', serif;
+  font-size: clamp(52px, 6vw, 50px);
   font-weight: 400;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   line-height: 1;
   color: #000000;
@@ -127,6 +135,7 @@ onMounted(() => {
 .name-first,
 .name-last {
   display: block;
+  margin-top: 15px;
 }
 
 /* 副标题：无衬线灰色大写 */
