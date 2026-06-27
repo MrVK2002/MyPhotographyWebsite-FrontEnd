@@ -6,6 +6,8 @@
   margin: 0;
   padding: 0;
   border-radius: 0;
+  /* Hide native cursor — custom cursor takes over */
+  cursor: none !important;
 }
 
 html,
@@ -19,6 +21,7 @@ body {
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.5;
+  cursor: none !important;
 }
 
 body {
@@ -49,7 +52,7 @@ select {
   color: inherit;
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: none !important;
 }
 
 a {

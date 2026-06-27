@@ -174,22 +174,8 @@ const PHOTOS = [
   },
 
   // ===== Beyond the Frame Rate (continued) =====
-  {
-    id: 'p19',
-    category: 'frame',
-    photoId: '1504198266286-1cd2f0b39e22',
-    title: '市场',
-    width: 1600, height: 1067,
-    exif: { camera: 'Leica M11 / 35mm F1.4', aperture: 'F/2.0', shutter: '1/250s', iso: 'ISO 800', date: '2024.07.18' }
-  },
-  {
-    id: 'p20',
-    category: 'frame',
-    photoId: '1521134888717-7d6b4b0a8c98',
-    title: '码头工人',
-    width: 1600, height: 1067,
-    exif: { camera: 'Sony A7R5 / 50mm F1.4', aperture: 'F/2.8', shutter: '1/500s', iso: 'ISO 200', date: '2024.06.30' }
-  },
+
+
   {
     id: 'p21',
     category: 'exposure',
@@ -318,14 +304,7 @@ const PHOTOS = [
     width: 1600, height: 1067,
     exif: { camera: 'Sony A7R5 / 24-70mm F2.8', aperture: 'F/8.0', shutter: '1/250s', iso: 'ISO 100', date: '2024.12.20' }
   },
-  {
-    id: 'p36',
-    category: 'exposure',
-    photoId: '1472214103451-9374f226dde3',
-    title: '麦田',
-    width: 1600, height: 1067,
-    exif: { camera: 'Canon R5 / 35mm F1.4', aperture: 'F/5.6', shutter: '1/500s', iso: 'ISO 100', date: '2024.12.08' }
-  },
+
   {
     id: 'p37',
     category: 'exposure',
@@ -404,14 +383,7 @@ const PHOTOS = [
     width: 1200, height: 1500,
     exif: { camera: 'Sony A7M4 / 35mm F1.4', aperture: 'F/1.8', shutter: '1/60s', iso: 'ISO 1600', date: '2024.12.15' }
   },
-  {
-    id: 'p46',
-    category: 'pixels',
-    photoId: '1444084318824-051a63a4cb2d',
-    title: '夜市',
-    width: 1200, height: 1500,
-    exif: { camera: 'Leica Q2 / 28mm F1.7', aperture: 'F/2.0', shutter: '1/100s', iso: 'ISO 800', date: '2024.12.01' }
-  },
+
   {
     id: 'p47',
     category: 'pixels',
@@ -446,15 +418,7 @@ const PHOTOS = [
     width: 1200, height: 1500,
     exif: { camera: 'Leica M6 / 35mm F2 (Kodak Portra 400)', aperture: 'F/5.6', shutter: '1/125s', iso: 'ISO 400', date: '2024.10.12' }
   },
-  {
-    id: 'p51',
-    category: 'pixels',
-    subcategory: 'pixels.grain',
-    photoId: '1473496169904-658ba7574b1d',
-    title: '地铁',
-    width: 1200, height: 1600,
-    exif: { camera: 'Fuji X-T5 / 23mm F2', aperture: 'F/2.0', shutter: '1/30s', iso: 'ISO 2000', date: '2024.09.28' }
-  },
+
   {
     id: 'p52',
     category: 'pixels',

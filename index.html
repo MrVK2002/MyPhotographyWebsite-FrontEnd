@@ -12,9 +12,68 @@
       rel="stylesheet"
     />
     <title>Leo Liang Photography | 屿墙摄影</title>
+    <style>
+      /* Custom cursor — minimalist dot with lerp damping */
+      #cursor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 10px;
+        height: 10px;
+        background: #888888;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 99999;
+        transform: translate(-50%, -50%);
+        transition: opacity 0.2s ease;
+      }
+    </style>
   </head>
   <body>
+    <div id="cursor"></div>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
+    <script>
+      (function () {
+        const cursor = document.getElementById('cursor');
+        if (!cursor) return;
+
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let curX = mouseX;
+        let curY = mouseY;
+        let isVisible = false;
+
+        const lerp = (a, b, t) => a + (b - a) * t;
+
+        function tick() {
+          curX = lerp(curX, mouseX, 0.14);
+          curY = lerp(curY, mouseY, 0.14);
+          cursor.style.left = curX + 'px';
+          cursor.style.top = curY + 'px';
+          requestAnimationFrame(tick);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+          mouseX = e.clientX;
+          mouseY = e.clientY;
+          if (!isVisible) {
+            isVisible = true;
+            cursor.style.opacity = '1';
+          }
+        }, { passive: true });
+
+        document.addEventListener('mouseleave', () => {
+          cursor.style.opacity = '0';
+          isVisible = false;
+        });
+
+        document.addEventListener('mouseout', (e) => {
+          if (!e.relatedTarget) cursor.style.opacity = '0';
+        });
+
+        tick();
+      })();
+    </script>
   </body>
 </html>
