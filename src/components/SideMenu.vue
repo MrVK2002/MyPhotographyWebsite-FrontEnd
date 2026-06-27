@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, nextTick } from 'vue'
 import gsap from 'gsap'
 import MenuItem from './MenuItem.vue'
 import SocialIcons from './SocialIcons.vue'
@@ -12,11 +12,44 @@ const props = defineProps({
 
 const emit = defineEmits(['select-category'])
 
+const menuSectionRef = ref(null)
+const hoverBarRef = ref(null)
+
 function onLogoClick() {
   emit('select-category', 'all')
 }
 
 const mainCategories = props.categories.filter((c) => c.key !== 'all')
+
+// Handle hover on menu item
+function onMenuHover(event) {
+  if (!menuSectionRef.value || !hoverBarRef.value) return
+
+  const wrapper = event.currentTarget
+  const menuItem = wrapper.querySelector('.menu-item')
+  if (!menuItem) return
+
+  const sectionRect = menuSectionRef.value.getBoundingClientRect()
+  const itemRect = menuItem.getBoundingClientRect()
+
+  // Calculate center position relative to section
+  const targetY = itemRect.top - sectionRect.top + itemRect.height / 2
+
+  gsap.to(hoverBarRef.value, {
+    top: targetY,
+    opacity: 1,
+    duration: 0.35,
+    ease: 'power2.out'
+  })
+}
+
+function onSectionLeave() {
+  if (!hoverBarRef.value) return
+  gsap.to(hoverBarRef.value, {
+    opacity: 0,
+    duration: 0.2
+  })
+}
 
 // Split text to chars helper
 function splitToChars(text) {
@@ -100,7 +133,15 @@ onMounted(() => {
     </button>
 
     <!-- 作品集主菜单 -->
-    <section class="side-menu__section" aria-labelledby="worksets">
+    <section
+      ref="menuSectionRef"
+      class="side-menu__section"
+      aria-labelledby="worksets"
+      @mouseleave="onSectionLeave"
+    >
+      <!-- 共享的悬浮 Bar -->
+      <span ref="hoverBarRef" class="hover-bar" aria-hidden="true"></span>
+
       <h2 id="worksets" class="side-menu__heading">
         <span
           v-for="(char, i) in worksHeadingChars"
@@ -113,6 +154,7 @@ onMounted(() => {
           v-for="cat in mainCategories"
           :key="cat.key"
           class="menu-item-wrapper"
+          @mouseenter="onMenuHover"
         >
           <MenuItem
             :labelEN="cat.labelEN"
@@ -122,36 +164,27 @@ onMounted(() => {
           />
         </li>
       </ul>
-    </section>
 
-    <!-- 分隔线 -->
-    <hr class="side-menu__divider" aria-hidden="true" />
+      <!-- 分隔线 -->
+      <hr class="side-menu__divider" aria-hidden="true" />
 
-    <!-- 次要菜单 -->
-    <section class="side-menu__section">
-      <h2 class="side-menu__heading">
-        <span
-          v-for="(char, i) in infoHeadingChars"
-          :key="'info-' + i"
-          class="heading-char"
-        >{{ char }}</span>
-      </h2>
+      <!-- 次要菜单 -->
       <ul class="side-menu__list">
-        <li class="menu-item-wrapper">
+        <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
             labelEN="ABOUT ME&nbsp;&nbsp; | &nbsp;&nbsp;关于我"
             :active="activeCategory === 'about'"
             @select="emit('select-category', 'about')"
           />
         </li>
-        <li class="menu-item-wrapper">
+        <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
             labelEN="CONTACT&nbsp;&nbsp; | &nbsp;&nbsp;联系"
             :active="activeCategory === 'contact'"
             @select="emit('select-category', 'contact')"
           />
         </li>
-        <li class="menu-item-wrapper">
+        <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
             labelEN="GUESTBOOK&nbsp;&nbsp; | &nbsp;&nbsp;留言墙"
             :active="activeCategory === 'guestbook'"
@@ -172,6 +205,7 @@ onMounted(() => {
 
 <style scoped>
 .side-menu {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: var(--side-width);
@@ -227,6 +261,7 @@ onMounted(() => {
 }
 
 .side-menu__section {
+  position: relative;
   margin-bottom: var(--space-5);
 }
 
@@ -263,6 +298,18 @@ onMounted(() => {
   border: none;
   border-top: 1px solid var(--c-mist);
   margin: var(--space-4) 0 var(--space-4);
+}
+
+.hover-bar {
+  position: absolute;
+  left: 0;
+  width: 2px;
+  height: 14px;
+  background: var(--c-mid);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  transform: translateY(-50%);
 }
 
 .side-menu__spacer {

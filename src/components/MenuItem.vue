@@ -39,22 +39,20 @@ defineEmits(['select'])
   outline: none;
 }
 
-.menu-item__bar {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 0;
-  height: 14px;
-  background: var(--c-ink);
-  transform: translateY(-50%);
-  transition: width var(--t-base) var(--ease-out);
-}
-
 .menu-item__labels {
   display: flex;
   align-items: baseline;
   gap: 8px;
   flex: 1;
+  transition: transform 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.menu-item__bar {
+  display: none;
+}
+
+.menu-item:hover .menu-item__labels {
+  transform: scale(0.95) translateX(4px);
 }
 
 .menu-item__label-en {
@@ -77,7 +75,6 @@ defineEmits(['select'])
   line-height: 1.4;
 }
 
-
 .menu-item:hover {
   color: var(--c-ink);
 }
@@ -91,16 +88,6 @@ defineEmits(['select'])
   color: var(--c-soft);
 }
 
-.menu-item:hover .menu-item__bar {
-  width: 2px;
-  background: var(--c-mid);
-}
-
-.menu-item:focus-visible .menu-item__bar {
-  width: 2px;
-  background: var(--c-ink);
-}
-
 .menu-item.is-active .menu-item__label-en {
   color: var(--c-ink);
   font-weight: 500;
@@ -109,10 +96,5 @@ defineEmits(['select'])
 .menu-item.is-active .menu-item__label-cn {
   color: var(--c-soft);
   font-weight: 400;
-}
-
-.menu-item.is-active .menu-item__bar {
-  width: 2px;
-  background: var(--c-ink);
 }
 </style>
