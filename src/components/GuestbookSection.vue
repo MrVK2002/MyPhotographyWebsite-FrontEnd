@@ -8,52 +8,37 @@ import { ref, reactive } from 'vue'
  * - 顶部"留下便签"按钮 → 内联表单
  */
 
-const PALETTE = [
-  { bg: '#FFFA9E', weight: 40 }, // 明黄
-  { bg: '#A8E6CF', weight: 20 }, // 淡蓝
-  { bg: '#FFD3B6', weight: 20 }, // 淡粉
-  { bg: '#C7F9CC', weight: 10 }, // 淡绿
-  { bg: '#E0BBE4', weight: 10 }  // 淡紫
-]
-
 function pickColor() {
-  const total = PALETTE.reduce((s, p) => s + p.weight, 0)
-  let r = Math.random() * total
-  for (const p of PALETTE) {
-    r -= p.weight
-    if (r <= 0) return p.bg
-  }
-  return PALETTE[0].bg
+  return '#fdfbf7'
 }
 
-function makeNote({ name, date, body, rating }) {
+function makeNote({ name, date, body }) {
   return {
     id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name,
     date,
     body,
-    rating: rating ?? 0,
     color: pickColor()
   }
 }
 
 const SEED_NOTES = [
-  { name: 'Iris Wen', date: '2025.05.12', body: '夜街那组太有氛围感了，霓虹路口简直像一部王家卫。', rating: 5 },
-  { name: 'Marco V.', date: '2025.05.09', body: '海雾那张在 100% 显示下细节惊人。一直在猜是降噪前的 raw。', rating: 4 },
-  { name: '屿墙的猫', date: '2025.04.28', body: '街拍系列像是把上海折叠成了一张明信片。已收藏。', rating: 5 },
-  { name: '胶片偏执者', date: '2025.04.21', body: '颗粒残像这一档我盯了很久，想问下 Tri-X 推到多少？谢谢。', rating: 4 },
-  { name: '夜行者', date: '2025.04.14', body: '峡湾之晨的色温控制得太冷静了。推荐用做屏保。', rating: 5 },
-  { name: 'Hannah L.', date: '2025.03.30', body: '留言墙能换便签颜色这件事，小孩很开心。', rating: 4 },
-  { name: '阿松', date: '2025.03.22', body: '下一辑能不能去拍一次舟山？想去那边很久了。', rating: 3 },
-  { name: '陆也', date: '2025.03.15', body: '主页大图裁剪到 30% 顶部很聪明，眼睛一下就到位。', rating: 5 },
-  { name: '栗子茶', date: '2025.03.08', body: '雨天那组让我想学摄影，虽然大概会三天打鱼。', rating: 4 }
+  { name: 'Iris Wen', date: '2025.05.12', body: '夜街那组太有氛围感了，霓虹路口简直像一部王家卫。' },
+  { name: 'Marco V.', date: '2025.05.09', body: '海雾那张在 100% 显示下细节惊人。一直在猜是降噪前的 raw。' },
+  { name: '屿墙的猫', date: '2025.04.28', body: '街拍系列像是把上海折叠成了一张明信片。已收藏。' },
+  { name: '胶片偏执者', date: '2025.04.21', body: '颗粒残像这一档我盯了很久，想问下 Tri-X 推到多少？谢谢。' },
+  { name: '夜行者', date: '2025.04.14', body: '峡湾之晨的色温控制得太冷静了。推荐用做屏保。' },
+  { name: 'Hannah L.', date: '2025.03.30', body: '留言墙能换便签颜色这件事，小孩很开心。' },
+  { name: '阿松', date: '2025.03.22', body: '下一辑能不能去拍一次舟山？想去那边很久了。' },
+  { name: '陆也', date: '2025.03.15', body: '主页大图裁剪到 30% 顶部很聪明，眼睛一下就到位。' },
+  { name: '栗子茶', date: '2025.03.08', body: '雨天那组让我想学摄影，虽然大概会三天打鱼。' }
 ]
 
 const notes = ref(SEED_NOTES.map(makeNote))
 
 // 顶部表单
 const formOpen = ref(false)
-const draft = reactive({ name: '', body: '', rating: 0 })
+const draft = reactive({ name: '', body: '' })
 const errors = reactive({ name: '', body: '' })
 
 function openForm() {
@@ -80,25 +65,14 @@ function submitNote() {
   const newNote = makeNote({
     name: draft.name.trim(),
     body: draft.body.trim(),
-    date: `${yyyy}.${mm}.${dd}`,
-    rating: draft.rating
+    date: `${yyyy}.${mm}.${dd}`
   })
   notes.value = [newNote, ...notes.value]
   draft.name = ''
   draft.body = ''
-  draft.rating = 0
   errors.name = ''
   errors.body = ''
   formOpen.value = false
-}
-
-function setRating(n) {
-  draft.rating = draft.rating === n ? 0 : n
-}
-
-// 生成星星显示
-function getStars(rating) {
-  return '★'.repeat(rating) + '☆'.repeat(5 - rating)
 }
 </script>
 
@@ -134,36 +108,18 @@ function getStars(rating) {
       novalidate
       @submit.prevent="submitNote"
     >
-      <div class="guestbook__form-row">
-        <label class="guestbook__field">
-          <span class="guestbook__field-label">昵称 / Nickname</span>
-          <input
-            v-model="draft.name"
-            type="text"
-            class="guestbook__input"
-            :class="{ 'is-error': errors.name }"
-            maxlength="32"
-            autocomplete="off"
-          />
-          <span v-if="errors.name" class="guestbook__field-error">{{ errors.name }}</span>
-        </label>
-
-        <fieldset class="guestbook__field guestbook__stars-field">
-          <legend class="guestbook__field-label">评价 / Rating (optional)</legend>
-          <div class="guestbook__stars">
-            <button
-              v-for="n in 5"
-              :key="n"
-              type="button"
-              class="guestbook__star"
-              :class="{ 'is-on': draft.rating >= n }"
-              :aria-pressed="draft.rating >= n"
-              :aria-label="`${n} 星`"
-              @click="setRating(n)"
-            >★</button>
-          </div>
-        </fieldset>
-      </div>
+      <label class="guestbook__field">
+        <span class="guestbook__field-label">昵称 / Nickname</span>
+        <input
+          v-model="draft.name"
+          type="text"
+          class="guestbook__input"
+          :class="{ 'is-error': errors.name }"
+          maxlength="32"
+          autocomplete="off"
+        />
+        <span v-if="errors.name" class="guestbook__field-error">{{ errors.name }}</span>
+      </label>
 
       <label class="guestbook__field guestbook__field--block">
         <span class="guestbook__field-label">留言 / Message</span>
@@ -194,9 +150,10 @@ function getStars(rating) {
         v-for="(note, index) in notes"
         :key="note.id"
         class="note-card"
+        :class="`note-card--${(index % 6) + 1}`"
         :style="{
           '--note-bg': note.color,
-          '--delay': `${index * 0.05}s`
+          '--delay': `${(index % 5) * 0.15}s`
         }"
       >
         <!-- 装饰元素 -->
@@ -206,18 +163,20 @@ function getStars(rating) {
         <svg class="note-doodle note-doodle--sparkle" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 0C12 6.6 17.4 12 24 12C17.4 12 12 17.4 12 24C12 17.4 6.6 12 0 12C6.6 12 12 6.6 12 0Z"></path>
         </svg>
+        <svg class="note-doodle note-doodle--swirl" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 10C27.9 10 10 27.9 10 50C10 72.1 27.9 90 50 90C72.1 90 90 72.1 90 50C90 32.3 75.7 18 58 18C44.3 18 33 29.3 33 43C33 53.5 41.5 62 52 62C59.7 62 66 55.7 66 48"></path>
+        </svg>
 
         <!-- 便签内容 -->
         <header class="note-card__header">
           <span class="note-card__name">{{ note.name }}</span>
-          <span class="note-card__date">{{ note.date }}</span>
         </header>
 
-        <div class="note-card__rating" v-if="note.rating > 0">
-          <span class="note-card__stars">{{ getStars(note.rating) }}</span>
-        </div>
-
         <p class="note-card__body">{{ note.body }}</p>
+
+        <footer class="note-card__footer">
+          <span class="note-card__date">{{ note.date }}</span>
+        </footer>
 
         <!-- 装饰胶带 -->
         <div class="note-card__tape" aria-hidden="true"></div>
@@ -355,98 +314,6 @@ function getStars(rating) {
   }
 }
 
-.guestbook__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.guestbook__field--block {
-  display: block;
-}
-
-.guestbook__field-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--c-mid);
-}
-
-.guestbook__input {
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--c-bone);
-  border: 1px solid var(--c-mist);
-  border-radius: 0;
-  font-family: var(--font-body);
-  font-size: var(--fs-base);
-  font-weight: 400;
-  color: var(--c-ink);
-  outline: none;
-  transition: border-color var(--t-base) var(--ease-out);
-}
-
-.guestbook__input:focus {
-  border-color: var(--c-ink);
-}
-
-.guestbook__input.is-error {
-  border-color: #b94740;
-}
-
-.guestbook__textarea {
-  resize: vertical;
-  min-height: 80px;
-  font-family: var(--font-elegance);
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.guestbook__field-error {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: #b94740;
-}
-
-.guestbook__stars-field {
-  border: 0;
-  padding: 0;
-  margin: 0;
-}
-
-.guestbook__stars-field legend {
-  padding: 0 0 6px;
-  width: 100%;
-}
-
-.guestbook__stars {
-  display: inline-flex;
-  gap: 6px;
-}
-
-.guestbook__star {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--c-mist);
-  background: var(--c-bone);
-  color: var(--c-soft);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0;
-  transition: color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
-}
-
-.guestbook__star.is-on {
-  color: #c89b2c;
-  border-color: #c89b2c;
-}
-
 .guestbook__form-actions {
   display: flex;
   justify-content: flex-end;
@@ -489,9 +356,53 @@ function getStars(rating) {
 ==================================================================== */
 .guestbook__notes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-5);
-  padding: var(--space-4) 0;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  padding: var(--space-4) var(--space-3);
+  margin-left: calc(var(--space-3) * -1);
+  margin-right: calc(var(--space-3) * -1);
+}
+
+/* 每行错位布局 */
+.guestbook__notes-grid .note-card:nth-child(4n+1) {
+  margin-top: 0;
+}
+.guestbook__notes-grid .note-card:nth-child(4n+2) {
+  margin-top: 1.5em;
+}
+.guestbook__notes-grid .note-card:nth-child(4n+3) {
+  margin-top: 0.8em;
+}
+.guestbook__notes-grid .note-card:nth-child(4n) {
+  margin-top: 2em;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .guestbook__notes-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .guestbook__notes-grid .note-card:nth-child(3n+1) {
+    margin-top: 0;
+  }
+  .guestbook__notes-grid .note-card:nth-child(3n+2) {
+    margin-top: 1.5em;
+  }
+  .guestbook__notes-grid .note-card:nth-child(3n) {
+    margin-top: 0.8em;
+  }
+}
+
+@media (max-width: 900px) {
+  .guestbook__notes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .guestbook__notes-grid .note-card:nth-child(2n+1) {
+    margin-top: 0;
+  }
+  .guestbook__notes-grid .note-card:nth-child(2n) {
+    margin-top: 1.5em;
+  }
 }
 
 /* ====================================================================
@@ -500,32 +411,35 @@ function getStars(rating) {
 .note-card {
   /* 便签配色 */
   --ink-color: #2c2c2c;
-  --paper-line: rgba(0, 0, 0, 0.08);
+  --paper-line: #e6e0d4;
   --tape-color: rgba(255, 221, 161, 0.85);
   --accent-coral: #ff8ba7;
   --accent-mint: #c6e377;
   --accent-lavender: #c0bbfe;
   --accent-yellow: #ffdf6c;
+  --bg-color: var(--note-bg);
 
   position: relative;
-  background: var(--note-bg);
-  background-image:
-    linear-gradient(var(--note-bg) 1.8em, transparent 1.8em) 0 0 / 100% 1.9em,
-    linear-gradient(var(--paper-line) 0.08em, transparent 0.08em) 0 1.8em / 100% 1.9em var(--note-bg);
-  border: 0.2em solid var(--ink-color);
-  border-radius: 3px 18px 3px 18px / 18px 3px 18px 3px;
+  background:
+    linear-gradient(var(--bg-color) 1.5em, transparent 1.5em) 0 0 / 100% 1.6em,
+    linear-gradient(var(--paper-line) 0.08em, transparent 0.08em) 0 1.5em / 100% 1.6em var(--bg-color);
+  border: 0.25em solid var(--ink-color);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
   box-shadow:
-    0.4em 0.4em 0 var(--ink-color),
-    inset 0 0 1em rgba(0, 0, 0, 0.03);
-  padding: 2.5em 1.5em 1.5em;
-  min-height: 180px;
+    0.5em 0.5em 0 var(--ink-color),
+    inset 0 0 1.2em rgba(0, 0, 0, 0.03);
+  padding: 3em 1.5em 2em;
+  aspect-ratio: unset;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   transition:
     transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
     box-shadow 0.4s ease,
     border-radius 0.4s ease;
-  animation: noteFloat 5s ease-in-out infinite;
+  animation: noteFloat 6s ease-in-out infinite;
   animation-delay: var(--delay);
   z-index: 1;
 }
@@ -533,22 +447,22 @@ function getStars(rating) {
 /* 胶带装饰 */
 .note-card__tape {
   position: absolute;
-  top: -0.5em;
+  top: -0.7em;
   left: 50%;
-  transform: translateX(-50%) rotate(-3deg);
-  width: 4em;
-  height: 1.2em;
+  transform: translateX(-50%) rotate(-4deg);
+  width: 5em;
+  height: 1.4em;
   background: var(--tape-color);
   border: 0.1em solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0.1em 0.1em 0.15em rgba(0, 0, 0, 0.1);
-  border-radius: 2px 3px 2px 4px;
+  box-shadow: 0.1em 0.1em 0.2em rgba(0, 0, 0, 0.1);
+  border-radius: 2px 4px 2px 5px;
   z-index: 10;
   animation: tapeFlutter 4s infinite alternate ease-in-out;
 }
 
 /* 悬停效果 */
 .note-card:hover {
-  transform: translateY(-0.5em) rotate(1deg);
+  transform: translateY(-0.5em) rotate(calc(var(--rotate) + 1deg));
   box-shadow:
     0.6em 0.6em 0 var(--ink-color),
     inset 0 0 1em rgba(0, 0, 0, 0.03);
@@ -568,61 +482,61 @@ function getStars(rating) {
 }
 
 .note-doodle--star {
-  width: 1.4em;
-  height: 1.4em;
-  top: 1em;
-  right: 1em;
+  width: 1.8em;
+  height: 1.8em;
+  top: 1.5em;
+  right: 1.5em;
   fill: var(--accent-yellow);
   animation: pulseSparkle 3s infinite alternate ease-in-out;
 }
 
 .note-doodle--sparkle {
-  width: 1.2em;
-  height: 1.2em;
-  bottom: 3em;
-  left: 0.8em;
+  width: 1.5em;
+  height: 1.5em;
+  top: 13em;
+  left: 1.5em;
   fill: var(--accent-mint);
   animation: pulseSparkle 2.5s infinite alternate-reverse ease-in-out;
+}
+
+.note-doodle--swirl {
+  width: 2.5em;
+  height: 2.5em;
+  bottom: 2em;
+  right: 1em;
+  stroke: var(--accent-lavender);
+  stroke-width: 6;
+  opacity: 0.6;
+  animation: rotateDoodle 15s linear infinite;
 }
 
 /* 便签头部 */
 .note-card__header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 8px;
-  margin-bottom: 4px;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.15);
+  width: 100%;
   position: relative;
   z-index: 2;
 }
 
 .note-card__name {
   font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 1.3em;
+  font-weight: 900;
   color: var(--ink-color);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
 }
 
 .note-card__date {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: rgba(0, 0, 0, 0.5);
+  font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
+  font-size: 11px;
+  color: black;
+  font-weight: bolder;
   letter-spacing: 0.06em;
-}
-
-.note-card__rating {
-  margin-bottom: 4px;
-  position: relative;
-  z-index: 2;
-}
-
-.note-card__stars {
-  font-size: 13px;
-  color: #d4a017;
-  letter-spacing: 1px;
+  margin-right: 30px;
+  margin-bottom: 8px;
 }
 
 .note-card__body {
@@ -631,11 +545,28 @@ function getStars(rating) {
   padding: 8px 0 0;
   font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
   font-size: 16px;
-  line-height: 1.9;
+  line-height: 1.5;
   color: var(--ink-color);
   word-break: break-word;
   position: relative;
   z-index: 2;
+  width: 100%;
+}
+
+.note-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.note-card__date {
+  font-family: 'XianSheng-GaiZenMeChengNi-2', var(--font-elegance);
+  font-size: 11px;
+  color: black;
+  font-weight: bolder;
+  letter-spacing: 0.06em;
 }
 
 /* ====================================================================
@@ -643,19 +574,19 @@ function getStars(rating) {
 ==================================================================== */
 @keyframes noteFloat {
   0%, 100% {
-    transform: translateY(0);
+    transform: translateY(0) rotate(var(--rotate));
   }
   50% {
-    transform: translateY(-0.3em);
+    transform: translateY(-0.4em) rotate(var(--rotate));
   }
 }
 
 @keyframes tapeFlutter {
   0% {
-    transform: translateX(-50%) rotate(-3deg) scale(1);
+    transform: translateX(-50%) rotate(-4deg) scale(1);
   }
   100% {
-    transform: translateX(-50%) rotate(-1deg) scale(1.02);
+    transform: translateX(-50%) rotate(-2deg) scale(1.02);
   }
 }
 
@@ -670,16 +601,29 @@ function getStars(rating) {
   }
 }
 
+@keyframes rotateDoodle {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* ====================================================================
    响应式布局
 ==================================================================== */
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   .guestbook__notes-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    padding: var(--space-4) 0;
+    margin-left: 0;
+    margin-right: 0;
   }
 
-  .note-card {
-    min-height: 160px;
+  .guestbook__notes-grid .note-card:nth-child(n) {
+    margin-top: 0;
+    margin-bottom: 1em;
   }
 }
 
