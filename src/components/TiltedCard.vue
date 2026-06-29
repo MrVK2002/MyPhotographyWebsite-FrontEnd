@@ -179,17 +179,20 @@ onUnmounted(() => {
 .tilted-card-inner {
   position: relative;
   transform-style: preserve-3d;
-  border-radius: 5px;
-  margin: -20px;
-  padding: 20px;
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .tilted-card-img {
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 15px;
+  border-radius: 8px;
   will-change: transform;
   transform: translateZ(0);
   display: block;

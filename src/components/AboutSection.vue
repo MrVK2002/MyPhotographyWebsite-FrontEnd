@@ -38,17 +38,19 @@ onMounted(() => {
   <section ref="sectionRef" class="about-page" aria-label="关于我">
     <!-- 左侧：黑白肖像 -->
     <div class="about-page__photo-wrap" aria-hidden="true">
-      <TiltedCard
-        image-src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=85"
-        alt-text="Leo Liang 肖像"
-        container-height="100%"
-        container-width="100%"
-        image-height="100%"
-        image-width="100%"
-        caption-text="Leo Liang"
-        :rotate-amplitude="2"
-        :scale-on-hover="1.04"
-      />
+      <div class="photo-card">
+        <TiltedCard
+          image-src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=85"
+          alt-text="Leo Liang 肖像"
+          container-height="100%"
+          container-width="100%"
+          image-height="100%"
+          image-width="100%"
+          caption-text="Leo Liang"
+          :rotate-amplitude="2"
+          :scale-on-hover="1.04"
+        />
+      </div>
     </div>
 
     <!-- 右侧：内容 -->
@@ -103,6 +105,23 @@ onMounted(() => {
   height: 100%;
   padding: 40px;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 双层卡片容器 */
+.photo-card {
+  position: relative;
+  width: 85%;
+  height: 85%;
+  background: #e8e8e8;
+  border-radius: 8px;
+  box-shadow:
+    12px 12px 0 #f0f0f0,
+    0 20px 40px -10px rgba(0, 0, 0, 0.15);
+  transform: rotate(-1.5deg);
+  overflow: visible;
 }
 
 /* 右侧内容 */
