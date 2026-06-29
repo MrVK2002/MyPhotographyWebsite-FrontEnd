@@ -12,13 +12,19 @@ const { state, current, counter, open, close, next, prev } = useLightbox()
 
 // 图片加载状态
 const isLoading = ref(true)
+const showLoadingIndicator = ref(false)
+let loadingTimer = null
 
 function onImgLoad() {
   isLoading.value = false
+  clearTimeout(loadingTimer)
+  showLoadingIndicator.value = false
 }
 
 function onImgError() {
   isLoading.value = false
+  clearTimeout(loadingTimer)
+  showLoadingIndicator.value = false
 }
 
 function openByIndex(index) {
@@ -53,8 +59,15 @@ watch(
     if (!open) return
     // 切换图片时重置加载状态
     isLoading.value = true
+    showLoadingIndicator.value = false
     preload(idx + 1)
     preload(idx - 1)
+    // 延迟 500ms 后才显示加载动画
+    loadingTimer = setTimeout(() => {
+      if (isLoading.value) {
+        showLoadingIndicator.value = true
+      }
+    }, 500)
   }
 )
 
@@ -72,6 +85,7 @@ watch(
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   document.body.style.overflow = ''
+  clearTimeout(loadingTimer)
 })
 
 const exifFields = computed(() => {
@@ -165,7 +179,7 @@ defineExpose({ openByIndex })
       <div class="lb__frame">
         <div class="lb__stage">
           <!-- 加载动画 -->
-          <div v-if="isLoading" class="lb__loading">
+          <div v-if="showLoadingIndicator" class="lb__loading">
             <div class="three-body">
               <div class="three-body__dot"></div>
               <div class="three-body__dot"></div>
@@ -293,6 +307,17 @@ defineExpose({ openByIndex })
   align-items: center;
   justify-content: center;
   z-index: 1;
+  opacity: 0;
+  animation: loadingFadeIn 0.4s ease-out forwards;
+}
+
+@keyframes loadingFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .three-body {
