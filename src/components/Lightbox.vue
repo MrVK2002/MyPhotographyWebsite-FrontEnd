@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useLightbox } from '@/composables/useLightbox.js'
 
 const props = defineProps({
@@ -9,6 +9,17 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const { state, current, counter, open, close, next, prev } = useLightbox()
+
+// 图片加载状态
+const isLoading = ref(true)
+
+function onImgLoad() {
+  isLoading.value = false
+}
+
+function onImgError() {
+  isLoading.value = false
+}
 
 function openByIndex(index) {
   open(index, props.items)
@@ -40,6 +51,8 @@ watch(
   () => [state.isOpen, state.index],
   ([open, idx]) => {
     if (!open) return
+    // 切换图片时重置加载状态
+    isLoading.value = true
     preload(idx + 1)
     preload(idx - 1)
   }
@@ -151,6 +164,15 @@ defineExpose({ openByIndex })
       <!-- 图片与信息栏容器 -->
       <div class="lb__frame">
         <div class="lb__stage">
+          <!-- 加载动画 -->
+          <div v-if="isLoading" class="lb__loading">
+            <div class="three-body">
+              <div class="three-body__dot"></div>
+              <div class="three-body__dot"></div>
+              <div class="three-body__dot"></div>
+            </div>
+          </div>
+
           <Transition name="lb-img" mode="out-in">
             <img
               :key="current.id"
@@ -160,6 +182,8 @@ defineExpose({ openByIndex })
               :width="current.lightbox.width"
               :height="current.lightbox.height"
               draggable="false"
+              @load="onImgLoad"
+              @error="onImgError"
             />
           </Transition>
         </div>
@@ -253,11 +277,115 @@ defineExpose({ openByIndex })
 
 /* 图片舞台 */
 .lb__stage {
+  position: relative;
   max-width: 100%;
   max-height: calc(100vh - 24px - 80px);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 加载动画 */
+.lb__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.three-body {
+  --uib-size: 35px;
+  --uib-speed: 0.8s;
+  --uib-color: rgba(255, 255, 255, 0.8);
+  position: relative;
+  display: inline-block;
+  height: var(--uib-size);
+  width: var(--uib-size);
+  animation: spin78236 calc(var(--uib-speed) * 2.5) infinite linear;
+}
+
+.three-body__dot {
+  position: absolute;
+  height: 100%;
+  width: 30%;
+}
+
+.three-body__dot::after {
+  content: '';
+  position: absolute;
+  height: 0%;
+  width: 100%;
+  padding-bottom: 100%;
+  background-color: var(--uib-color);
+  border-radius: 50%;
+}
+
+.three-body__dot:nth-child(1) {
+  bottom: 5%;
+  left: 0;
+  transform: rotate(60deg);
+  transform-origin: 50% 85%;
+}
+
+.three-body__dot:nth-child(1)::after {
+  bottom: 0;
+  left: 0;
+  animation: wobble1 var(--uib-speed) infinite ease-in-out;
+  animation-delay: calc(var(--uib-speed) * -0.3);
+}
+
+.three-body__dot:nth-child(2) {
+  bottom: 5%;
+  right: 0;
+  transform: rotate(-60deg);
+  transform-origin: 50% 85%;
+}
+
+.three-body__dot:nth-child(2)::after {
+  bottom: 0;
+  left: 0;
+  animation: wobble1 var(--uib-speed) infinite calc(var(--uib-speed) * -0.15) ease-in-out;
+}
+
+.three-body__dot:nth-child(3) {
+  bottom: -5%;
+  left: 0;
+  transform: translateX(116.666%);
+}
+
+.three-body__dot:nth-child(3)::after {
+  top: 0;
+  left: 0;
+  animation: wobble2 var(--uib-speed) infinite ease-in-out;
+}
+
+@keyframes spin78236 {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes wobble1 {
+  0%, 100% {
+    transform: translateY(0%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-66%) scale(0.65);
+    opacity: 0.8;
+  }
+}
+
+@keyframes wobble2 {
+  0%, 100% {
+    transform: translateY(0%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(66%) scale(0.65);
+    opacity: 0.8;
+  }
 }
 
 .lb__img {
