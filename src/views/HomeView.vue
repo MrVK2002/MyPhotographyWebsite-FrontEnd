@@ -5,6 +5,7 @@ import MasonryGrid from '@/components/MasonryGrid.vue'
 import Lightbox from '@/components/Lightbox.vue'
 import AboutSection from '@/components/AboutSection.vue'
 import GuestbookSection from '@/components/GuestbookSection.vue'
+import ContactSection from '@/components/ContactSection.vue'
 import { usePhotos } from '@/composables/usePhotos.js'
 import { useSmoothScroll } from '@/composables/useSmoothScroll.js'
 
@@ -16,11 +17,6 @@ const placeholderMessage = ref('')
 
 function handleSelectCategory(key) {
   placeholderMessage.value = ''
-  if (key === 'contact') {
-    placeholderMessage.value = '联系 / 约拍入口即将开放。'
-    setCategory('all')
-    return
-  }
   setCategory(key)
 }
 
@@ -42,6 +38,8 @@ function handleCardClick(index) {
       <!-- 顶部：按 brief 严格无任何内容（无标题/搜索/筛选/面包屑） -->
 
       <AboutSection v-if="activeCategory === 'about'" />
+
+      <ContactSection v-else-if="activeCategory === 'contact'" />
 
       <GuestbookSection v-else-if="activeCategory === 'guestbook'" />
 
