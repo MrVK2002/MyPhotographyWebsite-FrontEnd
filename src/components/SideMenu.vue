@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, nextTick } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import gsap from 'gsap'
 import MenuItem from './MenuItem.vue'
 import SocialIcons from './SocialIcons.vue'
@@ -205,7 +205,8 @@ onMounted(() => {
 
 <style scoped>
 .side-menu {
-  position: relative;
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
   width: var(--side-width);
@@ -214,12 +215,21 @@ onMounted(() => {
   height: 100vh;
   padding: var(--space-7) var(--space-6) var(--space-6);
   background: var(--c-bone);
-  border-right: 1px solid var(--c-mist);
   overflow-y: auto;
-  position: sticky;
-  top: 0;
   align-self: start;
   font-family: var(--font-body);
+  /*
+   * 右侧层次阴影 —— 让侧栏从主内容区轻微抬起（克制 / 无截断感版）。
+   *
+   * 关键：去掉 1px 描边层（硬边界制造"截断"），让所有阴影都从源头 0px 起始，
+   * 即阴影只在 offset 方向上扩散，不在侧栏边缘形成可见的硬线。
+   * 多层模糊叠加，靠远端柔光晕建立层级感，眼睛感知不到具体边界。
+   * 色相与 oklch(55.2% .016 285.938) 中性灰调和谐。
+   */
+  box-shadow:
+    0 0 6px oklch(20% 0.012 285.938 / 0.025),
+    0 0 14px oklch(20% 0.012 285.938 / 0.035),
+    0 0 32px oklch(20% 0.012 285.938 / 0.045);
 }
 
 .side-menu__logo {
