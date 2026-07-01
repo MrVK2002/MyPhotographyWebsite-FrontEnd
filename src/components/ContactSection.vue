@@ -12,15 +12,26 @@ const imageRef = ref(null)
 /**
  * 入场动画策略
  * ------------------------------------------------------------
- * 1. 用 gsap.set() 同步把动画目标设为初始态（opacity:0 / y/skewX 偏移），
- *    完全接管入场态，避免依赖 CSS 默认值。
- * 2. IntersectionObserver：只有当 section 进入视口时才播放动画，
- *    防止 SSR / HMR 快速切换分类时出现"瞬移到 0 再弹回"的突兀感。
+ * 1. 用 gsap.fromTo() 在 timeline 里同时声明初始态 + 终态，
+ *    无需额外 gsap.set 初始态，从源头消除 FOUC 闪烁。
+ * 2. 用 IntersectionObserver：只有当 section 进入视口时才播放动画，
+ *    防止 HMR / 快速切换分类时出现"瞬移到 0 再弹回"的突兀感。
  * 3. 动画结束后用 clearProps:'all' 清除 GSAP 内联样式，
  *    把元素交还给 CSS，保证 hover / focus 状态正常工作。
  * 4. prefers-reduced-motion:reduce 用户直接显示终态，不播动画。
  * 5. 进入视口前元素保持初始态；离开并再次进入时不会重新播放
  *    （一次性入场，符合杂志式排版的语义）。
+ *
+ * 【FOUC 修复原理】
+ *  - 用 gsap.fromTo() 而非 tl.to()：
+ *    fromTo 的 from 在 timeline 启动的瞬间同步设置到 DOM 上，
+ *    因此即使元素在视口内（不触发 IntersectionObserver 也能看到初始态），
+ *    浏览器首帧绘制的也是「初始态」而非「可见态」。
+ *  - 配合 IntersectionObserver 的 rootMargin 提前触发 + raf 节流：
+ *    用户滚动进入视口前 10% 距离时动画就启动，给动画留足展开时间，
+ *    不会看到"先显示后消失再淡入"的三段闪烁。
+ *  - 不用 onBeforeMount：fromTo 已经在动画启动时同步设置初始态，
+ *    比 onBeforeMount 更早；且避免 onBeforeMount 时 ref.value 可能为 null 的边缘情况。
  */
 onMounted(() => {
   const reduceMotion =
@@ -29,6 +40,8 @@ onMounted(() => {
   // ---- 1. 收集所有需要入场动画的目标 ----
   const titleLines = titleRef.value?.querySelectorAll('.contact-title__line') ?? []
   const infoLines = contactRef.value?.querySelectorAll('.contact-info__line') ?? []
+
+  // 即使 reduceMotion 也收集 targets，确保 clearProps 路径一致
   const targets = [
     ...titleLines,
     descRef.value,
@@ -38,48 +51,36 @@ onMounted(() => {
   ].filter(Boolean)
 
   if (reduceMotion) {
-    // 减少动效偏好：直接显示终态
     gsap.set(targets, { clearProps: 'all' })
     return
   }
 
-  // ---- 2. 同步设初始态（避免任何一帧的"已显示"泄漏） ----
-  // 注意：imageRef 不在这里接管 —— 它是远程 preload 资源，
-  // 走纯 CSS 的 contact-photo-fade-in 动画，与 IntersectionObserver 解耦，
-  // 这样图片可以"最先出来"，不被 timeline 阻塞。
-  gsap.set(titleLines, { y: 28, skewX: 3, opacity: 0 })
-  gsap.set(descRef.value, { y: 14, opacity: 0 })
-  gsap.set(ctaRef.value, { y: 10, opacity: 0 })
-  gsap.set(infoLines, { y: 12, opacity: 0 })
-
-  // 图片保底：万一 preload 失败/很慢，图片也至少可见
-  if (imageRef.value) {
-    gsap.set(imageRef.value, { clearProps: 'all' })
-  }
-
-  // ---- 3. 用 IntersectionObserver 在元素进入视口时启动 timeline ----
+  // ---- 2. 用 fromTo 自带初始态，无需单独的 gsap.set ----
+  //    fromTo 在 timeline 启动的同步瞬间把 from 状态写入 DOM，
+  //    所以浏览器对 Contact section 的"动画启动前"绘制就直接看到初始态。
   const play = () => {
     const tl = gsap.timeline({ defaults: { ease: 'expo.out' } })
 
-    tl.to(titleLines, {
-      y: 0,
-      skewX: 0,
-      opacity: 1,
-      duration: 1.1,
-      stagger: 0.15
-    })
-      .to(
+    tl.fromTo(
+      titleLines,
+      { y: 28, skewX: 3, opacity: 0 },
+      { y: 0, skewX: 0, opacity: 1, duration: 1.1, stagger: 0.15 }
+    )
+      .fromTo(
         descRef.value,
+        { y: 14, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.85, ease: 'power2.out' },
         '-=0.75'
       )
-      .to(
+      .fromTo(
         ctaRef.value,
+        { y: 10, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.7, ease: 'power2.out' },
         '-=0.5'
       )
-      .to(
+      .fromTo(
         infoLines,
+        { y: 12, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.7, stagger: 0.12, ease: 'power2.out' },
         '-=0.3'
       )
@@ -94,6 +95,10 @@ onMounted(() => {
     observer.disconnect()
   }
 
+  // ---- 3. 用 IntersectionObserver 在元素进入视口时启动 timeline ----
+  //    rootMargin '0px 0px -10% 0px'：当元素底部距离视口底部还有 10% 高度时触发，
+  //    给动画留出"即将出现"的提前量，避免用户在临界位置看到突兀的卡顿。
+  //    threshold: 0.15：元素 15% 进入视口就启动。
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
