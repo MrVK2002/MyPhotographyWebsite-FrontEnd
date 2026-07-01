@@ -71,7 +71,7 @@ function handleCardClick(index) {
 
 .main-pane {
   position: relative;
-  padding: var(--space-5);
+  padding: var(--space-4);
   min-width: 0;
 }
 

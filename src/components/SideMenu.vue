@@ -210,7 +210,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   width: var(--side-width);
-  min-width: 320px;
+  min-width: 295px;
   max-width: 480px;
   height: 100vh;
   padding: var(--space-7) var(--space-6) var(--space-6);
