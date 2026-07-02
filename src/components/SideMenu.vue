@@ -172,21 +172,21 @@ onMounted(() => {
       <ul class="side-menu__list">
         <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
-            labelEN="ABOUT ME&nbsp;&nbsp; | &nbsp;&nbsp;关于我"
+            labelEN="About Me&nbsp;&nbsp; | &nbsp;&nbsp;关于我"
             :active="activeCategory === 'about'"
             @select="emit('select-category', 'about')"
           />
         </li>
         <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
-            labelEN="CONTACT&nbsp;&nbsp; | &nbsp;&nbsp;联系"
+            labelEN="Contact&nbsp;&nbsp; | &nbsp;&nbsp;联系"
             :active="activeCategory === 'contact'"
             @select="emit('select-category', 'contact')"
           />
         </li>
         <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
-            labelEN="GUESTBOOK&nbsp;&nbsp; | &nbsp;&nbsp;留言墙"
+            labelEN="Guestbook&nbsp;&nbsp; | &nbsp;&nbsp;留言墙"
             :active="activeCategory === 'guestbook'"
             @select="emit('select-category', 'guestbook')"
           />
