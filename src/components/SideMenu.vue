@@ -169,24 +169,27 @@ onMounted(() => {
       <hr class="side-menu__divider" aria-hidden="true" />
 
       <!-- 次要菜单 -->
-      <ul class="side-menu__list">
+      <ul class="side-menu__list side-menu__list--secondary">
         <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
-            labelEN="About Me&nbsp;&nbsp; | &nbsp;&nbsp;关于我"
+            labelEN="About Me"
+            labelCN="关于我"
             :active="activeCategory === 'about'"
             @select="emit('select-category', 'about')"
           />
         </li>
         <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
-            labelEN="Contact&nbsp;&nbsp; | &nbsp;&nbsp;联系"
+            labelEN="Contact"
+            labelCN="联系"
             :active="activeCategory === 'contact'"
             @select="emit('select-category', 'contact')"
           />
         </li>
         <li class="menu-item-wrapper" @mouseenter="onMenuHover">
           <MenuItem
-            labelEN="Guestbook&nbsp;&nbsp; | &nbsp;&nbsp;留言墙"
+            labelEN="Guestbook"
+            labelCN="留言墙"
             :active="activeCategory === 'guestbook'"
             @select="emit('select-category', 'guestbook')"
           />
@@ -303,6 +306,16 @@ onMounted(() => {
 
 .menu-item-wrapper {
   will-change: transform, opacity;
+}
+
+.side-menu__list--secondary :deep(.menu-item__label-en)::after {
+  content: '|';
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--c-ink);
+  font-weight: 300;
+  transform: scaleY(0.8);
+  transform-origin: center;
 }
 
 .side-menu__divider {
